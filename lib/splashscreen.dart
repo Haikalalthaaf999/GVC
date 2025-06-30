@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
             Icon(Icons.movie_filter, color: Colors.red.shade900, size: 100),
             const SizedBox(height: 20),
             const Text(
-              'BIOSKOP APP',
+              'VGC',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,

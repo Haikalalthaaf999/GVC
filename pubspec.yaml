@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.4.0
   shared_preferences: ^2.2.2
-  carousel_slider: 4.1.1
+  carousel_slider: ^5.0.4
   image_picker: ^1.1.2
   intl: ^0.18.1
   path: ^1.8.3

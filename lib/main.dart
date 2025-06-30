@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
     // Seluruh kode UI Anda di sini tidak perlu diubah sama sekali
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Aplikasi Bioskop',
+      title: 'VGC',
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
         primaryColor: Colors.red.shade900,

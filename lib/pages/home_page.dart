@@ -1,11 +1,12 @@
 // lib/pages/home_page.dart
 
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vgc/auth/login.dart';
 import 'package:vgc/pages/detail_pages.dart';
 import 'package:vgc/pages/tambah_film.dart';
-import 'package:vgc/pages/tiket.dart'; // <-- 1. IMPORT HALAMAN TIKET
+import 'package:vgc/pages/tiket.dart';
 
 import '/api/film_service.dart';
 import '/models/model_film.dart';
@@ -18,12 +19,40 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Variabel untuk mengelola state navigasi
-  int _selectedIndex = 0; // 0=Film, 1=Tiket, 2=Akun
-
-  // State untuk data film
-  List<Datum> films = [];
+  int _selectedIndex = 0;
+  List<Datum> films = []; // <-- Tetap digunakan untuk Grid Film
   bool _isLoading = true;
+
+  // ===================================================================
+  // 1. DATA DUMMY DITEMPATKAN DI SINI
+  // ===================================================================
+  final List<Map<String, dynamic>> movieImages = [
+    {
+      'title': 'Inside Out 2',
+      'imageUrl':
+          'https://i.pinimg.com/736x/12/5b/8d/125b8d97e03823163e879432d07ad395.jpg',
+    },
+    {
+      'title': 'Spider-Man: No Way Home',
+      'imageUrl':
+          'https://i.pinimg.com/736x/10/3f/e9/103fe93ccaba46975b8f6ab9fad2cbd5.jpg',
+    },
+    {
+      'title': 'Doctor Strange Multiverse of Madness',
+      'imageUrl':
+          'https://i.pinimg.com/736x/68/6e/f1/686ef19247330b0530f17b65f1e7541f.jpg',
+    },
+    {
+      'title': 'Sonic the Hedgehog 2',
+      'imageUrl':
+          'https://i.pinimg.com/736x/c3/ea/27/c3ea276736f2424ad341f5bef3349bb4.jpg',
+    },
+    {
+      'title': '24H Limit',
+      'imageUrl':
+          'https://i.pinimg.com/736x/28/8b/b2/288bb226c16be6d37ad95576ab95bafc.jpg',
+    },
+  ];
 
   @override
   void initState() {
@@ -31,7 +60,6 @@ class _HomePageState extends State<HomePage> {
     _loadFilms();
   }
 
-  // Fungsi untuk berpindah halaman saat item navigasi ditekan
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -64,135 +92,47 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget untuk halaman film
-  Widget _buildFilmPageBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (films.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Gagal memuat film atau tidak ada film tersedia.',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-              textAlign: TextAlign.center,
+  // ===================================================================
+  // 2. WIDGET CAROUSEL DIUBAH UNTUK MENGGUNAKAN DATA DUMMY
+  // ===================================================================
+  Widget _buildCarouselSlider() {
+    return CarouselSlider(
+      items: movieImages.map((movie) {
+        // Setiap item sekarang hanya menampilkan gambar dari data dummy
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: AspectRatio(
+            aspectRatio: 2 / 2,
+            child: Image.network(
+              movie['imageUrl'],
+              fit: BoxFit.cover,
+              // Menambahkan loading & error builder untuk gambar dari internet
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return const Center(child: CircularProgressIndicator());
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey.shade800,
+                  child: const Icon(Icons.broken_image, color: Colors.white24),
+                );
+              },
             ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: _loadFilms,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Coba Lagi'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadFilms,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Segera Tayang',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildCarousel(),
-            const SizedBox(height: 24),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Sedang Tayang',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: _buildFilmGrid(),
-            ),
-          ],
-        ),
+          ),
+        );
+      }).toList(),
+      options: CarouselOptions(
+        height: 250,
+        enlargeCenterPage: true,
+        autoPlay: true,
+        autoPlayInterval: const Duration(seconds: 3),
+        viewportFraction: 0.40,
+        enableInfiniteScroll: true,
       ),
     );
   }
 
-  Widget _buildCarousel() {
-    return SizedBox(
-      height: 200,
-      child: PageView.builder(
-        controller: PageController(viewportFraction: 0.85),
-        itemCount: films.length > 5 ? 5 : films.length,
-        itemBuilder: (context, index) {
-          final film = films[index];
-          return GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => FilmDetailPage(film: film)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: film.imageUrl.isNotEmpty
-                    ? Image.network(
-                        film.imageUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey.shade800,
-                            child: const Center(
-                              child: Icon(
-                                Icons.broken_image,
-                                color: Colors.white38,
-                                size: 40,
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                    : Container(
-                        color: Colors.grey.shade800,
-                        child: const Center(
-                          child: Icon(
-                            Icons.movie,
-                            color: Colors.white38,
-                            size: 50,
-                          ),
-                        ),
-                      ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
+  // Widget ini tidak diubah dan tetap menggunakan data dari API
   Widget _buildFilmGrid() {
     return GridView.builder(
       shrinkWrap: true,
@@ -270,22 +210,92 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Widget ini tidak diubah
+  Widget _buildFilmPageBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (films.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Gagal memuat film atau tidak ada film tersedia.',
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _loadFilms,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadFilms,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Segera Tayang',
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildCarouselSlider(),
+            const SizedBox(height: 24),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Sedang Tayang',
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: _buildFilmGrid(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget build utama tidak diubah
   @override
   Widget build(BuildContext context) {
-    // Daftar halaman yang akan ditampilkan berdasarkan navigasi
-    final List<Widget> _pages = [
-      _buildFilmPageBody(), // Halaman 0: Film
-      const TiketListPage(), // Halaman 1: Tiket
+    final List<Widget> pages = [
+      _buildFilmPageBody(),
+      const TiketListPage(),
       const Center(
         child: Text('Halaman Akun', style: TextStyle(color: Colors.white)),
-      ), // Halaman 2: Akun (Placeholder)
+      ),
     ];
 
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.red[900],
-        // Judul AppBar berubah sesuai halaman yang aktif
         title: Text(
           _selectedIndex == 0
               ? "VGC Cinema"
@@ -302,11 +312,8 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      // Body sekarang menampilkan halaman dari daftar _pages
-      body: _pages[_selectedIndex],
-      floatingActionButton:
-          _selectedIndex ==
-              0 // Hanya tampilkan FAB di halaman Film
+      body: pages[_selectedIndex],
+      floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton(
               backgroundColor: Colors.red[800],
               onPressed: () =>
@@ -321,7 +328,7 @@ class _HomePageState extends State<HomePage> {
               tooltip: 'Tambah Film',
               child: const Icon(Icons.add),
             )
-          : null, // Jangan tampilkan FAB di halaman lain
+          : null,
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
         selectedItemColor: Colors.redAccent,
@@ -338,7 +345,6 @@ class _HomePageState extends State<HomePage> {
             label: 'Akun',
           ),
         ],
-        // Menghubungkan navigasi dengan state
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),
