@@ -1,4 +1,4 @@
-// lib/pages/home_page.dart
+// lib/pages/home_page.dart (Versi FINAL dengan CurvedNavigationBar)
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +7,9 @@ import 'package:vgc/auth/login.dart';
 import 'package:vgc/pages/detail_pages.dart';
 import 'package:vgc/pages/tambah_film.dart';
 import 'package:vgc/pages/tiket.dart';
+import 'package:vgc/pages/user.dart'; 
+import 'package:vgc/custom/bottom.dart';
+
 
 import '/api/film_service.dart';
 import '/models/model_film.dart';
@@ -20,12 +23,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  List<Datum> films = []; // <-- Tetap digunakan untuk Grid Film
+  List<Datum> films = [];
+  List<Datum> _filteredFilms = [];
   bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
 
-  // ===================================================================
-  // 1. DATA DUMMY DITEMPATKAN DI SINI
-  // ===================================================================
   final List<Map<String, dynamic>> movieImages = [
     {
       'title': 'Inside Out 2',
@@ -58,6 +60,14 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadFilms();
+    _searchController.addListener(_filterFilms);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterFilms);
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _onItemTapped(int index) {
@@ -67,24 +77,33 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadFilms() async {
-    if (!_isLoading) {
-      setState(() {
-        _isLoading = true;
-      });
-    }
+    setState(() {
+      _isLoading = true;
+    });
     final result = await FilmService().getAllFilms();
     if (mounted) {
       setState(() {
         films = result ?? [];
+        _filteredFilms = films;
         _isLoading = false;
       });
     }
+  }
+
+  void _filterFilms() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredFilms = films.where((film) {
+        return film.title.toLowerCase().contains(query);
+      }).toList();
+    });
   }
 
   void _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     await prefs.remove('nama');
+    await prefs.remove('email');
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
@@ -92,13 +111,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ===================================================================
-  // 2. WIDGET CAROUSEL DIUBAH UNTUK MENGGUNAKAN DATA DUMMY
-  // ===================================================================
   Widget _buildCarouselSlider() {
     return CarouselSlider(
       items: movieImages.map((movie) {
-        // Setiap item sekarang hanya menampilkan gambar dari data dummy
         return ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: AspectRatio(
@@ -106,7 +121,6 @@ class _HomePageState extends State<HomePage> {
             child: Image.network(
               movie['imageUrl'],
               fit: BoxFit.cover,
-              // Menambahkan loading & error builder untuk gambar dari internet
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
                 return const Center(child: CircularProgressIndicator());
@@ -132,12 +146,24 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget ini tidak diubah dan tetap menggunakan data dari API
   Widget _buildFilmGrid() {
+    if (_filteredFilms.isEmpty && !_isLoading && _searchController.text.isNotEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Text(
+            'Tidak ada film yang cocok dengan pencarian Anda.',
+            style: TextStyle(color: Colors.white70, fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: films.length,
+      itemCount: _filteredFilms.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 16,
@@ -145,7 +171,7 @@ class _HomePageState extends State<HomePage> {
         childAspectRatio: 0.65,
       ),
       itemBuilder: (context, index) {
-        final film = films[index];
+        final film = _filteredFilms[index];
         return GestureDetector(
           onTap: () => Navigator.push(
             context,
@@ -210,13 +236,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget ini tidak diubah
-  Widget _buildFilmPageBody() {
+  Widget _buildFilmPageBodyWithSearch() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.redAccent));
     }
 
-    if (films.isEmpty) {
+    if (films.isEmpty && _searchController.text.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -239,12 +264,37 @@ class _HomePageState extends State<HomePage> {
 
     return RefreshIndicator(
       onRefresh: _loadFilms,
+      color: Colors.redAccent,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  cursorColor: Colors.redAccent,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Cari film...',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                    prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.7)),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    isDense: true,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
@@ -281,15 +331,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget build utama tidak diubah
   @override
   Widget build(BuildContext context) {
+    // Menyesuaikan urutan pages agar sesuai dengan ikon di CurvedNavigationBar
+    // Icons.home (index 0) -> Film
+    // Icons.confirmation_number (index 1) -> Tiket
+    // Icons.history (index 2) -> Halaman Riwayat
+    // Icons.person (index 3) -> Akun
     final List<Widget> pages = [
-      _buildFilmPageBody(),
-      const TiketListPage(),
-      const Center(
-        child: Text('Halaman Akun', style: TextStyle(color: Colors.white)),
-      ),
+      _buildFilmPageBodyWithSearch(), // Halaman Film (Home)
+      const TiketListPage(),          // Halaman Tiket
+      const Center(child: Text('Halaman Riwayat (History)', style: TextStyle(color: Colors.white, fontSize: 20))), // Halaman Riwayat (placeholder)
+      const UserPage(),               // Halaman Akun
     ];
 
     return Scaffold(
@@ -300,53 +353,59 @@ class _HomePageState extends State<HomePage> {
           _selectedIndex == 0
               ? "VGC Cinema"
               : _selectedIndex == 1
-              ? "Tiket Saya"
-              : "Akun Saya",
+                  ? "Tiket Saya"
+                  : _selectedIndex == 2
+                      ? "Riwayat" // Judul untuk halaman Riwayat
+                      : "Profil Pengguna", // Judul untuk halaman Akun
+          style: const TextStyle(color: Colors.white),
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-          ),
+          // Tombol logout hanya muncul di halaman Profil
+          if (_selectedIndex == 3) // Profil Pengguna adalah index 3
+            IconButton(
+              onPressed: _logout,
+              icon: const Icon(Icons.logout),
+              tooltip: 'Logout',
+              color: Colors.white,
+            ),
         ],
       ),
       body: pages[_selectedIndex],
-      floatingActionButton: _selectedIndex == 0
+      floatingActionButton: _selectedIndex == 0 // FAB hanya muncul di halaman Film (index 0)
           ? FloatingActionButton(
               backgroundColor: Colors.red[800],
-              onPressed: () =>
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TambahFilmPage()),
-                  ).then((isSuccess) {
-                    if (isSuccess == true) {
-                      _loadFilms();
-                    }
-                  }),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TambahFilmPage()),
+              ).then((isSuccess) {
+                if (isSuccess == true) {
+                  _loadFilms();
+                }
+              }),
               tooltip: 'Tambah Film',
-              child: const Icon(Icons.add),
+              child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.black,
-        selectedItemColor: Colors.redAccent,
-        unselectedItemColor: Colors.white70,
-        type: BottomNavigationBarType.fixed,
+      // --- Mengganti BottomNavigationBar dengan CurvedNavigationBar ---
+      bottomNavigationBar: CurvedNavigationBar(
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.movie), label: 'Film'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_num),
-            label: 'Tiket',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Akun',
-          ),
+          Icon(Icons.home, size: 24.0, color: Colors.black), // Film (index 0)
+          Icon(Icons.confirmation_number, size: 24.0, color: Colors.black), // Tiket (index 1)
+          Icon(Icons.history, size: 24.0, color: Colors.black), // Riwayat (index 2)
+          Icon(Icons.person, size: 24.0, color: Colors.black), // Akun (index 3)
         ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        index: _selectedIndex,
+        color: const Color(0xffFFF1D5), // Warna latar belakang bar
+        buttonBackgroundColor: Colors.white, // Warna latar belakang tombol aktif
+        backgroundColor: const Color(0xff0000), // Warna latar belakang Scaffold di bawah CurvedNav
+        height: 75.0,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
     );
   }

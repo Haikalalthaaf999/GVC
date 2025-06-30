@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PreferenceHelper {
   static const _keyToken = 'token';
   static const _keyNama = 'nama';
+  static const _keyEmail = 'email';
 
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -17,6 +18,11 @@ class PreferenceHelper {
   static Future<void> saveNama(String nama) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyNama, nama);
+  }
+
+  static Future<void> saveEmail(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyEmail, email);
   }
 
   static Future<String?> getNama() async {
