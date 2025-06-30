@@ -1,18 +1,29 @@
+// lib/pages/home_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vgc/auth/login.dart';
 import 'package:vgc/pages/detail_pages.dart';
 import 'package:vgc/pages/tambah_film.dart';
+import 'package:vgc/pages/tiket.dart'; // <-- 1. IMPORT HALAMAN TIKET
+
 import '/api/film_service.dart';
 import '/models/model_film.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  // Variabel untuk mengelola state navigasi
+  int _selectedIndex = 0; // 0=Film, 1=Tiket, 2=Akun
+
+  // State untuk data film
   List<Datum> films = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -20,19 +31,107 @@ class _HomePageState extends State<HomePage> {
     _loadFilms();
   }
 
-  Future<void> _loadFilms() async {
-    final result = await FilmService().getAllFilms();
+  // Fungsi untuk berpindah halaman saat item navigasi ditekan
+  void _onItemTapped(int index) {
     setState(() {
-      films = result ?? [];
+      _selectedIndex = index;
     });
   }
 
+  Future<void> _loadFilms() async {
+    if (!_isLoading) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+    final result = await FilmService().getAllFilms();
+    if (mounted) {
+      setState(() {
+        films = result ?? [];
+        _isLoading = false;
+      });
+    }
+  }
+
   void _logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
-    Navigator.pushReplacement(
+    await prefs.remove('nama');
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
+      (Route<dynamic> route) => false,
+    );
+  }
+
+  // Widget untuk halaman film
+  Widget _buildFilmPageBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (films.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Gagal memuat film atau tidak ada film tersedia.',
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _loadFilms,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadFilms,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Segera Tayang',
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildCarousel(),
+            const SizedBox(height: 24),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Sedang Tayang',
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: _buildFilmGrid(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -40,8 +139,8 @@ class _HomePageState extends State<HomePage> {
     return SizedBox(
       height: 200,
       child: PageView.builder(
-        controller: PageController(viewportFraction: 0.8),
-        itemCount: films.length,
+        controller: PageController(viewportFraction: 0.85),
+        itemCount: films.length > 5 ? 5 : films.length,
         itemBuilder: (context, index) {
           final film = films[index];
           return GestureDetector(
@@ -50,14 +149,42 @@ class _HomePageState extends State<HomePage> {
               MaterialPageRoute(builder: (_) => FilmDetailPage(film: film)),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  film.image,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                ),
+                child: film.imageUrl.isNotEmpty
+                    ? Image.network(
+                        film.imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade800,
+                            child: const Center(
+                              child: Icon(
+                                Icons.broken_image,
+                                color: Colors.white38,
+                                size: 40,
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
+                        color: Colors.grey.shade800,
+                        child: const Center(
+                          child: Icon(
+                            Icons.movie,
+                            color: Colors.white38,
+                            size: 50,
+                          ),
+                        ),
+                      ),
               ),
             ),
           );
@@ -69,13 +196,13 @@ class _HomePageState extends State<HomePage> {
   Widget _buildFilmGrid() {
     return GridView.builder(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: films.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.6,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.65,
       ),
       itemBuilder: (context, index) {
         final film = films[index];
@@ -85,20 +212,50 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (_) => FilmDetailPage(film: film)),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  film.image,
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: film.imageUrl.isNotEmpty
+                      ? Image.network(
+                          film.imageUrl,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade800,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  color: Colors.white38,
+                                  size: 40,
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          color: Colors.grey.shade800,
+                          child: const Center(
+                            child: Icon(
+                              Icons.movie_creation_outlined,
+                              color: Colors.white38,
+                              size: 40,
+                            ),
+                          ),
+                        ),
                 ),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 film.title,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -115,59 +272,75 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Daftar halaman yang akan ditampilkan berdasarkan navigasi
+    final List<Widget> _pages = [
+      _buildFilmPageBody(), // Halaman 0: Film
+      const TiketListPage(), // Halaman 1: Tiket
+      const Center(
+        child: Text('Halaman Akun', style: TextStyle(color: Colors.white)),
+      ), // Halaman 2: Akun (Placeholder)
+    ];
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.red[900],
-        title: Text("CGV Cinema"),
+        // Judul AppBar berubah sesuai halaman yang aktif
+        title: Text(
+          _selectedIndex == 0
+              ? "VGC Cinema"
+              : _selectedIndex == 1
+              ? "Tiket Saya"
+              : "Akun Saya",
+        ),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             onPressed: _logout,
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadFilms,
-        child: SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (films.isNotEmpty) _buildCarousel(),
-              SizedBox(height: 24),
-              Text(
-                'Now Showing',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 12),
-              _buildFilmGrid(),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.red[800],
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => TambahFilmPage()),
-        ).then((_) => _loadFilms()),
-        child: Icon(Icons.add),
-      ),
+      // Body sekarang menampilkan halaman dari daftar _pages
+      body: _pages[_selectedIndex],
+      floatingActionButton:
+          _selectedIndex ==
+              0 // Hanya tampilkan FAB di halaman Film
+          ? FloatingActionButton(
+              backgroundColor: Colors.red[800],
+              onPressed: () =>
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TambahFilmPage()),
+                  ).then((isSuccess) {
+                    if (isSuccess == true) {
+                      _loadFilms();
+                    }
+                  }),
+              tooltip: 'Tambah Film',
+              child: const Icon(Icons.add),
+            )
+          : null, // Jangan tampilkan FAB di halaman lain
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
         selectedItemColor: Colors.redAccent,
         unselectedItemColor: Colors.white70,
-        items: [
+        type: BottomNavigationBarType.fixed,
+        items: const [
           BottomNavigationBarItem(icon: Icon(Icons.movie), label: 'Film'),
-          BottomNavigationBarItem(icon: Icon(Icons.confirmation_num), label: 'Tiket'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Akun'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.confirmation_num),
+            label: 'Tiket',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Akun',
+          ),
         ],
+        // Menghubungkan navigasi dengan state
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
     );
   }

@@ -1,45 +1,64 @@
+// lib/models/model_jadwal.dart
+
 import 'dart:convert';
+import 'model_film.dart';
 
-// Fungsi untuk parsing dari JSON ke model
-List<JadwalDatum> listJadwalFromJson(String str) =>
-    List<JadwalDatum>.from(json.decode(str)["data"].map((x) => JadwalDatum.fromJson(x)));
-
-// Fungsi untuk konversi balik ke JSON
-String listJadwalToJson(List<JadwalDatum> data) =>
-    json.encode({"data": List<dynamic>.from(data.map((x) => x.toJson()))});
+List<JadwalDatum> listJadwalFromJson(String str) {
+  try {
+    final jsonData = json.decode(str);
+    if (jsonData['data'] == null || jsonData['data'] is! List) return [];
+    return List<JadwalDatum>.from(
+      jsonData["data"].map((x) => JadwalDatum.fromJson(x)),
+    );
+  } catch (e) {
+    print("Error parsing jadwal list: $e");
+    return [];
+  }
+}
 
 class JadwalDatum {
   int id;
-  int filmId;
-  String jam;
-  String tempat;
-  DateTime createdAt;
-  DateTime updatedAt;
+  String filmId;
+  String studio; // <-- Field ini sudah benar
+  DateTime? startTime;
+  DateTime? createdAt;
+  DateTime? updatedAt;
+  Datum? film;
 
   JadwalDatum({
     required this.id,
     required this.filmId,
-    required this.jam,
-    required this.tempat,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.studio,
+    this.startTime,
+    this.createdAt,
+    this.updatedAt,
+    this.film,
   });
 
-  factory JadwalDatum.fromJson(Map<String, dynamic> json) => JadwalDatum(
-        id: json['id'],
-        filmId: json['film_id'],
-        jam: json['jam'],
-        tempat: json['tempat'],
-        createdAt: DateTime.parse(json['created_at']),
-        updatedAt: DateTime.parse(json['updated_at']),
-      );
+  factory JadwalDatum.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(String? dateStr) {
+      if (dateStr == null) return null;
+      try {
+        return DateTime.parse(dateStr);
+      } catch (e) {
+        return null;
+      }
+    }
 
-  Map<String, dynamic> toJson() => {
-        "id": id,
-        "film_id": filmId,
-        "jam": jam,
-        "tempat": tempat,
-        "created_at": createdAt.toIso8601String(),
-        "updated_at": updatedAt.toIso8601String(),
-      };
+    String safeString(dynamic value) {
+      return value?.toString() ?? '';
+    }
+
+    return JadwalDatum(
+      id: json["id"] ?? 0,
+      filmId: json["film_id"]?.toString() ?? '',
+      studio: safeString(
+        json["studio"],
+      ), // <-- Mencari key 'studio' sudah benar
+      startTime: parseDate(json["start_time"]),
+      createdAt: parseDate(json["created_at"]),
+      updatedAt: parseDate(json["updated_at"]),
+      film: json["film"] == null ? null : Datum.fromJson(json["film"]),
+    );
+  }
 }

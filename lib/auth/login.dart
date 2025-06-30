@@ -15,31 +15,59 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  void _login() async {
-  setState(() => _isLoading = true);
+void _login() async {
+    setState(() => _isLoading = true);
 
-  final response = await UserService().login(
-    _emailController.text,
-    _passwordController.text,
-  );
+    try {
+      final response = await UserService().login(
+        _emailController.text,
+        _passwordController.text,
+      );
 
-  setState(() => _isLoading = false);
+      // Mencetak respons tetap berguna untuk debugging di masa depan
+      print('RESPONS DARI SERVER: $response');
 
-  if (response['success']) {
-    // Simpan token dan nama ke SharedPreferences via helper
-    await PreferenceHelper.saveToken(response['token']);
-    await PreferenceHelper.saveNama(response['nama']); // pastikan 'nama' ada di response
+      setState(() => _isLoading = false);
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => HomePage()),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(response['message'] ?? 'Login gagal')),
-    );
+      // KONDISI SUKSES DIUBAH: Kita anggap login sukses jika ada 'token' di dalam 'data'
+      if (response != null && response['data']?['token'] != null) {
+        // AMBIL DATA DARI LOKASI YANG BENAR (SESUAI RESPON API)
+        final String token = response['data']['token'];
+        final String nama = response['data']['user']['name'];
+
+        // Simpan data yang sudah diambil
+        await PreferenceHelper.saveToken(token);
+        await PreferenceHelper.saveNama(
+          nama,
+        ); // Pastikan helper Anda menyimpan 'nama'
+
+        print('Login sukses dan data disimpan. Menjalankan navigasi...');
+
+        // Navigasi ke HomePage
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+      } else {
+        // Jika kondisi di atas tidak terpenuhi, berarti login gagal
+        final errorMessage =
+            response?['message'] ?? 'Login gagal. Terjadi kesalahan.';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      }
+    } catch (e) {
+      print('TERJADI ERROR DI BLOK CATCH: $e');
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          ),
+        ),
+      );
+    }
   }
-}
 
 
   @override

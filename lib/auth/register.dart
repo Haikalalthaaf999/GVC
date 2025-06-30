@@ -16,22 +16,48 @@ class _RegisterPageState extends State<RegisterPage> {
   void _register() async {
     setState(() => _isLoading = true);
 
-    final response = await UserService().register(
-      _nameController.text,
-      _emailController.text,
-      _passwordController.text,
-    );
-
-    setState(() => _isLoading = false);
-
-    if (response['success']) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => LoginPage()),
+    // Gunakan try-catch untuk menangani jika ada error koneksi atau server
+    try {
+      final response = await UserService().register(
+        _nameController.text,
+        _emailController.text,
+        _passwordController.text,
       );
-    } else {
+
+      setState(() => _isLoading = false);
+
+      // ---- PERBAIKAN UTAMA DI SINI ----
+      // 1. Cek dulu apakah response tidak null.
+      // 2. Gunakan (response['success'] ?? false) untuk memastikan nilainya BUKAN null.
+      //    Jika null, maka akan dianggap 'false'.
+      if (response != null && (response['success'] ?? false)) {
+        // Tampilkan notifikasi sukses sebelum pindah halaman
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registrasi berhasil! Silakan login.')),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => LoginPage()),
+        );
+      } else {
+        // ---- PERBAIKAN UNTUK PESAN ERROR ----
+        // Buat pesan error lebih aman jika response atau message itu null
+        final errorMessage =
+            response?['message'] ?? 'Registrasi gagal. Silakan coba lagi.';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      }
+    } catch (e) {
+      // Blok ini akan menangani error jika ada masalah jaringan atau server tidak merespon
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response['message'] ?? 'Registrasi gagal')),
+        SnackBar(
+          content: Text(
+            'Tidak dapat terhubung ke server. Periksa koneksi Anda.',
+          ),
+        ),
       );
     }
   }

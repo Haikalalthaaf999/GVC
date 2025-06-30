@@ -1,94 +1,144 @@
+// lib/pages/edit_tiket.dart
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vgc/api/tiket_service.dart';
+import '../api/tiket_service.dart';
 import '../models/model_tiket.dart';
-
 
 class EditTiketPage extends StatefulWidget {
   final Tiket tiket;
-
   const EditTiketPage({Key? key, required this.tiket}) : super(key: key);
 
   @override
-  _EditTiketPageState createState() => _EditTiketPageState();
+  State<EditTiketPage> createState() => _EditTiketPageState();
 }
 
 class _EditTiketPageState extends State<EditTiketPage> {
-  final TextEditingController _jumlahController = TextEditingController();
+  late int _jumlahTiket;
   bool _loading = false;
 
   @override
   void initState() {
     super.initState();
-    _jumlahController.text = widget.tiket.jumlah.toString();
+    // Ambil jumlah tiket awal dari data yang dikirim
+    _jumlahTiket = widget.tiket.jumlah;
   }
 
-  Future<void> _simpanPerubahan() async {
+  Future<void> _updateTiket() async {
+    setState(() => _loading = true);
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
 
-    if (token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Token tidak ditemukan")),
-      );
-      return;
-    }
-
-    setState(() => _loading = true);
-
+    // ===================================================================
+    // MEMANGGIL FUNGSI EDIT TIKET DENGAN PARAMETER YANG LENGKAP
+    // ===================================================================
     final success = await TiketService().editTiket(
       token: token,
       tiketId: widget.tiket.id,
-      jumlah: int.tryParse(_jumlahController.text) ?? widget.tiket.jumlah,
+      scheduleId: widget.tiket.jadwalId, // <-- Mengirim scheduleId dari tiket
+      jumlah: _jumlahTiket,
     );
+
+    if (!mounted) return;
 
     setState(() => _loading = false);
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Tiket berhasil diubah")),
+        const SnackBar(content: Text('Jumlah tiket berhasil diperbarui')),
       );
-      Navigator.pop(context, true);
+      Navigator.pop(context, true); // Kembali dan beri sinyal refresh
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal mengubah tiket")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Gagal memperbarui tiket')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text("Edit Tiket"),
-        backgroundColor: Colors.red[700],
+        title: const Text('Edit Jumlah Tiket'),
+        backgroundColor: Colors.red.shade900,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              "Jumlah Tiket",
-              style: TextStyle(fontSize: 18),
+              'Film: ${widget.tiket.film?.title ?? widget.tiket.nama}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
-            SizedBox(height: 10),
-            TextField(
-              controller: _jumlahController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: 'Masukkan jumlah tiket',
-                border: OutlineInputBorder(),
+            const SizedBox(height: 24),
+            Card(
+              color: Colors.grey.shade900,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Ubah Jumlah Tiket',
+                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.remove_circle,
+                            color: Colors.white,
+                          ),
+                          onPressed: _jumlahTiket > 1
+                              ? () => setState(() => _jumlahTiket--)
+                              : null,
+                        ),
+                        Text(
+                          '$_jumlahTiket',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.add_circle,
+                            color: Colors.white,
+                          ),
+                          onPressed: () => setState(() => _jumlahTiket++),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: _loading ? null : _simpanPerubahan,
-              icon: Icon(Icons.save),
-              label: Text(_loading ? 'Menyimpan...' : 'Simpan'),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: _loading ? null : _updateTiket,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[700],
-                minimumSize: Size(double.infinity, 50),
+                backgroundColor: Colors.red.shade700,
+                minimumSize: const Size.fromHeight(50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
+              child: _loading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                      'Simpan Perubahan',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
             ),
           ],
         ),
