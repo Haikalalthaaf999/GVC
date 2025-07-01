@@ -43,19 +43,19 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.movie_filter, color: Colors.red.shade900, size: 100),
-            const SizedBox(height: 20),
+            Image.asset('assets/images/logo splash.png', width: 200, height: 200),
+            const SizedBox(height: 15),
             const Text(
-              'Welcome',
+              'VGC',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Colors.orangeAccent,
                 letterSpacing: 2,
               ),
             ),
-            const SizedBox(height: 10),
-            const CircularProgressIndicator(color: Colors.red),
+            const SizedBox(height: 30),
+            const CircularProgressIndicator(color: Colors.deepOrangeAccent),
           ],
         ),
       ),

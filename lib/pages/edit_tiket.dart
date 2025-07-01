@@ -62,7 +62,7 @@ class _EditTiketPageState extends State<EditTiketPage> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text('Edit Jumlah Tiket'),
-        backgroundColor: Colors.red.shade900,
+        backgroundColor: Colors.orangeAccent,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
@@ -127,7 +127,7 @@ class _EditTiketPageState extends State<EditTiketPage> {
             ElevatedButton(
               onPressed: _loading ? null : _updateTiket,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
+                backgroundColor: Colors.orange,
                 minimumSize: const Size.fromHeight(50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

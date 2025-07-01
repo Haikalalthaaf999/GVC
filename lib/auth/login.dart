@@ -101,7 +101,7 @@ class _LoginPageState extends State<LoginPage> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.deepPurple[900]!, // Darkest purple
+              Colors.deepOrange[900]!, // Darkest purple
               Colors.deepPurple[700]!, // Slightly lighter purple
               Colors.deepPurple[500]!, // Even lighter at the bottom
             ],
@@ -126,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisSize: MainAxisSize.min, // Wrap content tightly
                     children: [
                       // Logo
-                      Image.asset('assets/images/Logo.png', width: 180),
+                      Image.asset('assets/images/Asset 2.png', width: 100),
                       SizedBox(height: 30),
 
                       // Title

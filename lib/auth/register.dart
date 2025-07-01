@@ -34,8 +34,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
       setState(() => _isLoading = false);
 
-      if (response != null && (response['success'] ?? false)) {
-        // Registration successful
+       if (response != null && (response['message'] == 'Registrasi berhasil')) {
+        // Registrasi berhasil
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Registrasi berhasil! Silakan login.'),
@@ -48,24 +48,25 @@ class _RegisterPageState extends State<RegisterPage> {
           MaterialPageRoute(builder: (_) => LoginPage()),
         );
       } else {
-        // Registration failed, check message from API
+        // Registrasi gagal, periksa pesan dari API
         String errorMessage;
         if (response != null && response['message'] != null) {
-          // Check for specific error message indicating email already exists
-          if (response['message'].contains('email') && response['message'].contains('taken')) {
-            errorMessage = 'Email ini sudah terdaftar. Silakan gunakan email lain.';
+          // Periksa pesan error spesifik jika email sudah terdaftar
+          if (response['message'].contains('email') &&
+              response['message'].contains('taken')) {
+            errorMessage =
+                'Email ini sudah terdaftar. Silakan gunakan email lain.';
           } else {
-            errorMessage = response['message'];
+            errorMessage =
+                response['message']; // Menggunakan pesan error dari server
           }
         } else {
-          errorMessage = 'Registrasi gagal. Terjadi kesalahan yang tidak diketahui.';
+          errorMessage =
+              'Registrasi gagal. Terjadi kesalahan yang tidak diketahui.';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
@@ -90,7 +91,7 @@ class _RegisterPageState extends State<RegisterPage> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.deepPurple[900]!,
+              Colors.deepOrange[900]!,
               Colors.deepPurple[700]!,
               Colors.deepPurple[500]!,
             ],
@@ -115,9 +116,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Logo
-                      Image.asset('assets/images/Logo.png', width: 180),
+                      Image.asset('assets/images/Asset 2.png', width: 100),
                       SizedBox(height: 30),
-
                       // Title
                       Text(
                         'Buat Akun Baru',

@@ -348,7 +348,8 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.red[900],
+        actions: [Container()],
+        backgroundColor: Colors.orange,
         title: Text(
           _selectedIndex == 0
               ? "VGC Cinema"
@@ -359,23 +360,12 @@ class _HomePageState extends State<HomePage> {
                       : "Profil Pengguna", // Judul untuk halaman Akun
           style: const TextStyle(color: Colors.white),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        automaticallyImplyLeading: false,
-        actions: [
-          // Tombol logout hanya muncul di halaman Profil
-          if (_selectedIndex == 3) // Profil Pengguna adalah index 3
-            IconButton(
-              onPressed: _logout,
-              icon: const Icon(Icons.logout),
-              tooltip: 'Logout',
-              color: Colors.white,
-            ),
-        ],
+       
       ),
       body: pages[_selectedIndex],
       floatingActionButton: _selectedIndex == 0 // FAB hanya muncul di halaman Film (index 0)
           ? FloatingActionButton(
-              backgroundColor: Colors.red[800],
+              backgroundColor: Colors.orange,
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const TambahFilmPage()),
@@ -397,7 +387,7 @@ class _HomePageState extends State<HomePage> {
           Icon(Icons.person, size: 24.0, color: Colors.black), // Akun (index 3)
         ],
         index: _selectedIndex,
-        color: const Color(0xffFFF1D5), // Warna latar belakang bar
+        color:  Colors.orangeAccent, // Warna latar belakang bar
         buttonBackgroundColor: Colors.white, // Warna latar belakang tombol aktif
         backgroundColor: const Color(0xff0000), // Warna latar belakang Scaffold di bawah CurvedNav
         height: 75.0,

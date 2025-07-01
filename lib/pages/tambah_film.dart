@@ -107,7 +107,7 @@ class _TambahFilmPageState extends State<TambahFilmPage> {
             color: Colors.white,
           ),
         ),
-        backgroundColor: Colors.red[700],
+        backgroundColor: Colors.orange,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
@@ -193,7 +193,7 @@ class _TambahFilmPageState extends State<TambahFilmPage> {
                     style: const TextStyle(fontSize: 16, color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[700],
+                    backgroundColor: Colors.orange,
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

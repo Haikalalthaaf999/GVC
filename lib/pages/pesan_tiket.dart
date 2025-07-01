@@ -89,7 +89,7 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: Text('Pesan Tiket ($_nama)'),
-        backgroundColor: Colors.red.shade900,
+        backgroundColor: Colors.orange,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
@@ -201,7 +201,7 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
             ElevatedButton(
               onPressed: _loading ? null : _pesanTiket,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade700,
+                backgroundColor: Colors.orange,
                 minimumSize: const Size.fromHeight(50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
