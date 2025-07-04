@@ -3,26 +3,35 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vgc/helper/toast_custom.dart'; // PERUBAHAN: Import toast
+import 'package:vgc/theme/color.dart'; // PERUBAHAN: Import palet warna
 import '../api/tiket_service.dart';
 import '../models/model_jadwal.dart';
+import 'package:vgc/helper/prefrence.dart';
 
 class PesanTiketPage extends StatefulWidget {
   final JadwalDatum jadwal;
+  final List<String> selectedSeats;
 
-  const PesanTiketPage({Key? key, required this.jadwal}) : super(key: key);
+  const PesanTiketPage({
+    Key? key,
+    required this.jadwal,
+    required this.selectedSeats,
+  }) : super(key: key);
 
   @override
   State<PesanTiketPage> createState() => _PesanTiketPageState();
 }
 
 class _PesanTiketPageState extends State<PesanTiketPage> {
-  int _jumlahTiket = 1;
+  late int _jumlahTiket;
   bool _loading = false;
   String _nama = 'Guest';
 
   @override
   void initState() {
     super.initState();
+    _jumlahTiket = widget.selectedSeats.length;
     _loadNama();
   }
 
@@ -50,24 +59,35 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
     setState(() => _loading = false);
 
     if (success) {
+      await PreferenceHelper.addOccupiedSeats(
+        widget.jadwal.id.toString(),
+        widget.selectedSeats,
+      );
+
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Pemesanan Berhasil'),
-          content: const Text('Tiket Anda telah berhasil dipesan.'),
+          backgroundColor: kSecondaryBackground, // PERUBAHAN WARNA
+          title: const Text(
+            'Pemesanan Berhasil',
+            style: TextStyle(color: kPrimaryTextColor),
+          ),
+          content: Text(
+            'Tiket Anda telah berhasil dipesan untuk bangku: ${widget.selectedSeats.join(', ')}.',
+            style: const TextStyle(color: kAccentColor),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: const Text('OK', style: TextStyle(color: kAccentColor)),
             ),
           ],
         ),
       );
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Gagal memesan tiket')));
+      // PERUBAHAN: Menggunakan toast kustom
+      showCustomToast('Gagal memesan tiket');
     }
   }
 
@@ -75,22 +95,26 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
   Widget build(BuildContext context) {
     final filmTitle = widget.jadwal.film?.title ?? 'Judul Film';
     final filmImageUrl = widget.jadwal.film?.imageUrl ?? '';
+
     final tanggal = widget.jadwal.startTime != null
-        ? DateFormat(
-            'EEEE, d MMMM yyyy',
-            'id_ID',
-          ).format(widget.jadwal.startTime!)
+        ? DateFormat('EEEE, d MMMM y', 'id_ID').format(widget.jadwal.startTime!)
         : 'N/A';
+
     final jam = widget.jadwal.startTime != null
         ? DateFormat('HH:mm').format(widget.jadwal.startTime!)
         : 'N/A';
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: kPrimaryBackground, // PERUBAHAN WARNA
       appBar: AppBar(
-        title: Text('Pesan Tiket ($_nama)'),
-        backgroundColor: Colors.orange,
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          'Pesan Tiket ($_nama)',
+          style: const TextStyle(color: kPrimaryTextColor),
+        ), // PERUBAHAN WARNA
+        backgroundColor: kSecondaryBackground, // PERUBAHAN WARNA
+        iconTheme: const IconThemeData(
+          color: kPrimaryTextColor,
+        ), // PERUBAHAN WARNA
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -98,7 +122,7 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Card(
-              color: Colors.grey.shade900,
+              color: kSecondaryBackground, // PERUBAHAN WARNA
               clipBehavior: Clip.antiAlias,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -111,10 +135,10 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
                     child: filmImageUrl.isNotEmpty
                         ? Image.network(filmImageUrl, fit: BoxFit.cover)
                         : Container(
-                            color: Colors.black54,
+                            color: kPrimaryBackground, // PERUBAHAN WARNA
                             child: const Icon(
                               Icons.movie,
-                              color: Colors.white24,
+                              color: kAccentColor, // PERUBAHAN WARNA
                               size: 40,
                             ),
                           ),
@@ -127,7 +151,7 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
                         Text(
                           filmTitle,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: kPrimaryTextColor, // PERUBAHAN WARNA
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -135,15 +159,11 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
-                        // ===================================================================
-                        // PERBAIKAN DI SINI: Menampilkan info dengan aman
-                        // ===================================================================
                         _buildInfoRow(
                           Icons.theaters,
-                          // Jika studio kosong, tampilkan 'N/A'
-                          widget.jadwal.studio.isNotEmpty
-                              ? widget.jadwal.studio
-                              : 'N/A',
+                          widget.jadwal.studio?.isNotEmpty ?? false
+                              ? widget.jadwal.studio!
+                              : 'N/A (Tempat)',
                         ),
                         _buildInfoRow(Icons.calendar_today, tanggal),
                         _buildInfoRow(Icons.access_time, jam),
@@ -155,43 +175,48 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
             ),
             const SizedBox(height: 24),
             Card(
-              color: Colors.grey.shade900,
+              color: kSecondaryBackground, // PERUBAHAN WARNA
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'Jumlah Tiket',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
+                      style: TextStyle(
+                        color: kPrimaryTextColor,
+                        fontSize: 18,
+                      ), // PERUBAHAN WARNA
                     ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.remove_circle,
-                            color: Colors.white,
-                          ),
-                          onPressed: _jumlahTiket > 1
-                              ? () => setState(() => _jumlahTiket--)
-                              : null,
-                        ),
-                        Text(
-                          '$_jumlahTiket',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.add_circle,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => setState(() => _jumlahTiket++),
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      '$_jumlahTiket Tiket',
+                      style: const TextStyle(
+                        color: kPrimaryTextColor, // PERUBAHAN WARNA
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Bangku Dipilih:',
+                      style: TextStyle(
+                        color: kAccentColor,
+                        fontSize: 16,
+                      ), // PERUBAHAN WARNA
+                    ),
+                    Text(
+                      widget.selectedSeats.isEmpty
+                          ? 'Belum ada bangku dipilih'
+                          : widget.selectedSeats.join(', '),
+                      style: const TextStyle(
+                        color: kPrimaryTextColor, // PERUBAHAN WARNA
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -201,17 +226,21 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
             ElevatedButton(
               onPressed: _loading ? null : _pesanTiket,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
+                backgroundColor: kAccentColor, // PERUBAHAN WARNA
+                foregroundColor: kPrimaryBackground, // PERUBAHAN WARNA
                 minimumSize: const Size.fromHeight(50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: _loading
-                  ? const CircularProgressIndicator(color: Colors.white)
+                  ? const CircularProgressIndicator(color: kPrimaryBackground)
                   : const Text(
                       'Pesan Sekarang',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
           ],
@@ -225,11 +254,14 @@ class _PesanTiketPageState extends State<PesanTiketPage> {
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white70, size: 16),
+          Icon(icon, color: kAccentColor, size: 16), // PERUBAHAN WARNA
           const SizedBox(width: 8),
           Text(
             text,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+            style: const TextStyle(
+              color: kAccentColor,
+              fontSize: 14,
+            ), // PERUBAHAN WARNA
           ),
         ],
       ),

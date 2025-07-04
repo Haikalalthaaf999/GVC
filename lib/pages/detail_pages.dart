@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:vgc/models/model_film.dart';
 import 'package:vgc/pages/jadwalpage.dart';
+import 'package:vgc/theme/color.dart'; // PERUBAHAN: Import palet warna
 
 class FilmDetailPage extends StatelessWidget {
   final Datum film;
@@ -13,14 +14,17 @@ class FilmDetailPage extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFF0F121C), // Background gelap konsisten
+        backgroundColor: kPrimaryBackground, // PERUBAHAN WARNA
         body: CustomScrollView(
           slivers: [
             SliverAppBar(
-              expandedHeight: 400.0, // Tinggi AppBar saat diperluas
+              expandedHeight: 400.0,
               floating: false,
-              pinned: true, // AppBar tetap terlihat saat scroll
-              backgroundColor: const Color(0xFF0F121C), // Warna AppBar saat menyusut
+              pinned: true,
+              backgroundColor: kPrimaryBackground, // PERUBAHAN WARNA
+              iconTheme: const IconThemeData(
+                color: kPrimaryTextColor,
+              ), // PERUBAHAN WARNA
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   fit: StackFit.expand,
@@ -32,42 +36,51 @@ class FilmDetailPage extends StatelessWidget {
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) =>
                                 Container(
-                              color: Colors.grey.shade800,
-                              child: const Center(
-                                child: Icon(Icons.broken_image,
-                                    color: Colors.white38, size: 50),
-                              ),
-                            ),
+                                  color:
+                                      kSecondaryBackground, // PERUBAHAN WARNA
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      color: kAccentColor,
+                                      size: 50,
+                                    ), // PERUBAHAN WARNA
+                                  ),
+                                ),
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return Container(
-                                color: Colors.grey.shade800,
+                                color: kSecondaryBackground, // PERUBAHAN WARNA
                                 child: const Center(
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white)),
+                                  child: CircularProgressIndicator(
+                                    color: kAccentColor,
+                                  ),
+                                ), // PERUBAHAN WARNA
                               );
                             },
                           )
                         : Container(
-                            color: Colors.grey.shade800,
+                            color: kSecondaryBackground, // PERUBAHAN WARNA
                             child: const Center(
-                              child: Icon(Icons.movie,
-                                  color: Colors.white38, size: 50),
+                              child: Icon(
+                                Icons.movie,
+                                color: kAccentColor,
+                                size: 50,
+                              ), // PERUBAHAN WARNA
                             ),
                           ),
                     // --- Overlay gelap untuk gambar latar belakang ---
                     Container(
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.black.withOpacity(0.3),
-                            Colors.black.withOpacity(0.7),
-                            const Color(0xFF0F121C).withOpacity(0.9), // Match body background
-                            const Color(0xFF0F121C),
+                            // PERUBAHAN WARNA: Gradien disesuaikan dengan background baru
+                            kPrimaryBackground,
+                            Colors.transparent,
+                            kPrimaryBackground,
                           ],
-                          stops: const [0.0, 0.4, 0.8, 1.0],
+                          stops: [0.0, 0.5, 1.0],
                         ),
                       ),
                     ),
@@ -87,24 +100,34 @@ class FilmDetailPage extends StatelessWidget {
                               child: film.imageUrl.isNotEmpty
                                   ? Image.network(
                                       film.imageUrl,
-                                      width: 120, // Ukuran poster kecil
+                                      width: 120,
                                       height: 180,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) =>
-                                          Container(
-                                        width: 120,
-                                        height: 180,
-                                        color: Colors.grey.shade700,
-                                        child: const Icon(Icons.broken_image,
-                                            color: Colors.white38),
-                                      ),
+                                      errorBuilder:
+                                          (
+                                            context,
+                                            error,
+                                            stackTrace,
+                                          ) => Container(
+                                            width: 120,
+                                            height: 180,
+                                            color:
+                                                kSecondaryBackground, // PERUBAHAN WARNA
+                                            child: const Icon(
+                                              Icons.broken_image,
+                                              color: kAccentColor,
+                                            ), // PERUBAHAN WARNA
+                                          ),
                                     )
                                   : Container(
                                       width: 120,
                                       height: 180,
-                                      color: Colors.grey.shade700,
-                                      child: const Icon(Icons.movie,
-                                          color: Colors.white38),
+                                      color:
+                                          kSecondaryBackground, // PERUBAHAN WARNA
+                                      child: const Icon(
+                                        Icons.movie,
+                                        color: kAccentColor,
+                                      ), // PERUBAHAN WARNA
                                     ),
                             ),
                             const SizedBox(width: 20),
@@ -117,18 +140,19 @@ class FilmDetailPage extends StatelessWidget {
                                   Text(
                                     film.title,
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                      color:
+                                          kPrimaryTextColor, // PERUBAHAN WARNA
                                       fontSize: 28,
                                       fontWeight: FontWeight.bold,
                                       shadows: [
                                         Shadow(
-                                            blurRadius: 8.0,
-                                            color: Colors.black,
-                                            offset: Offset(2, 2))
+                                          blurRadius: 8.0,
+                                          color: Colors.black,
+                                          offset: Offset(2, 2),
+                                        ),
                                       ],
                                     ),
                                   ),
-                                
                                 ],
                               ),
                             ),
@@ -144,23 +168,23 @@ class FilmDetailPage extends StatelessWidget {
             SliverPersistentHeader(
               delegate: _SliverTabBarDelegate(
                 TabBar(
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.white60,
-                  indicatorColor: Colors.redAccent, // Warna indikator yang menonjol
+                  labelColor: kPrimaryTextColor, // PERUBAHAN WARNA
+                  unselectedLabelColor: kAccentColor, // PERUBAHAN WARNA
+                  indicatorColor: kAccentColor, // PERUBAHAN WARNA
                   tabs: const [
                     Tab(text: 'SINOPSIS'),
                     Tab(text: 'JADWAL'),
                   ],
                 ),
               ),
-              pinned: true, // Agar TabBar tetap di atas saat scroll
+              pinned: true,
             ),
             // --- TabBarView (Isi Konten Tab) ---
             SliverFillRemaining(
               child: TabBarView(
                 children: [
-                  _buildTentangTab(), // Konten untuk tab "Tentang"
-                  JadwalTab(filmId: film.id.toString()), // Konten untuk tab "Jadwal"
+                  _buildTentangTab(),
+                  JadwalTab(filmId: film.id.toString()),
                 ],
               ),
             ),
@@ -170,44 +194,25 @@ class FilmDetailPage extends StatelessWidget {
     );
   }
 
-  // --- Widget untuk menampilkan rating bintang ---
-  Widget _buildRatingStars(double rating) {
-    List<Widget> stars = [];
-    int fullStars = rating.floor();
-    bool hasHalfStar = (rating - fullStars) >= 0.5;
-
-    for (int i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.add(const Icon(Icons.star, color: Colors.yellow, size: 20));
-      } else if (hasHalfStar && i == fullStars) {
-        stars.add(const Icon(Icons.star_half, color: Colors.yellow, size: 20));
-      } else {
-        stars.add(const Icon(Icons.star_border, color: Colors.grey, size: 20));
-      }
-    }
-    return Row(children: stars);
-  }
-
   // --- Konten untuk Tab "Tentang" (Sinopsis) ---
   Widget _buildTentangTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20), // Padding yang lebih konsisten
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Info Tambahan (Genre, Sutradara, Penulis)
           _buildInfoRow(Icons.movie_filter, 'Genre', film.genre),
           const SizedBox(height: 10),
           _buildInfoRow(Icons.person, 'Sutradara', film.director),
           const SizedBox(height: 10),
           _buildInfoRow(Icons.edit, 'Penulis', film.writer),
-          const Divider(color: Colors.white24, height: 40), // Divider lebih tebal
+          Divider(color: kSecondaryBackground, height: 40), // PERUBAHAN WARNA
           const Text(
             'Sinopsis',
             style: TextStyle(
-              fontSize: 22, // Ukuran judul sinopsis lebih besar
+              fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: kPrimaryTextColor, // PERUBAHAN WARNA
             ),
           ),
           const SizedBox(height: 12),
@@ -217,10 +222,10 @@ class FilmDetailPage extends StatelessWidget {
                 : 'Tidak ada sinopsis tersedia untuk film ini.',
             style: const TextStyle(
               fontSize: 16,
-              color: Colors.white70,
-              height: 1.6, // Jarak antar baris lebih longgar
+              color: kAccentColor, // PERUBAHAN WARNA
+              height: 1.6,
             ),
-            textAlign: TextAlign.justify, // Teks sinopsis rata kanan-kiri
+            textAlign: TextAlign.justify,
           ),
         ],
       ),
@@ -232,21 +237,24 @@ class FilmDetailPage extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.white70, size: 20),
-        const SizedBox(width: 15), // Jarak ikon ke teks
+        Icon(icon, color: kAccentColor, size: 20), // PERUBAHAN WARNA
+        const SizedBox(width: 15),
         Text(
           '$label: ',
           style: const TextStyle(
             fontSize: 16,
-            color: Colors.white70,
+            color: kAccentColor, // PERUBAHAN WARNA
             fontWeight: FontWeight.bold,
           ),
         ),
         Expanded(
           child: Text(
             value.isNotEmpty ? value : 'N/A',
-            style: const TextStyle(fontSize: 16, color: Colors.white),
-            overflow: TextOverflow.ellipsis, // Tangani teks panjang
+            style: const TextStyle(
+              fontSize: 16,
+              color: kPrimaryTextColor,
+            ), // PERUBAHAN WARNA
+            overflow: TextOverflow.ellipsis,
             maxLines: 2,
           ),
         ),
@@ -268,15 +276,18 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(
-      color: const Color(0xFF0F121C), // Background TabBar, sesuaikan dengan body Scaffold
+      color: kPrimaryBackground, // PERUBAHAN WARNA
       child: _tabBar,
     );
   }
 
   @override
   bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
-    return false; // Karena TabBar tidak berubah
+    return false;
   }
 }

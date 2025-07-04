@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vgc/theme/color.dart';
+import 'package:vgc/helper/toast_custom.dart'; // PERUBAHAN: Import helper toast baru
 import '../api/tiket_service.dart';
 import '../models/model_tiket.dart';
 
@@ -20,7 +22,6 @@ class _EditTiketPageState extends State<EditTiketPage> {
   @override
   void initState() {
     super.initState();
-    // Ambil jumlah tiket awal dari data yang dikirim
     _jumlahTiket = widget.tiket.jumlah;
   }
 
@@ -30,13 +31,10 @@ class _EditTiketPageState extends State<EditTiketPage> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
 
-    // ===================================================================
-    // MEMANGGIL FUNGSI EDIT TIKET DENGAN PARAMETER YANG LENGKAP
-    // ===================================================================
     final success = await TiketService().editTiket(
       token: token,
       tiketId: widget.tiket.id,
-      scheduleId: widget.tiket.jadwalId, // <-- Mengirim scheduleId dari tiket
+      scheduleId: widget.tiket.jadwalId,
       jumlah: _jumlahTiket,
     );
 
@@ -45,25 +43,27 @@ class _EditTiketPageState extends State<EditTiketPage> {
     setState(() => _loading = false);
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Jumlah tiket berhasil diperbarui')),
-      );
-      Navigator.pop(context, true); // Kembali dan beri sinyal refresh
+      // PERUBAHAN: Menggunakan helper toast
+      showCustomToast('Jumlah tiket berhasil diperbarui');
+      Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Gagal memperbarui tiket')));
+      // PERUBAHAN: Menggunakan helper toast
+      showCustomToast('Gagal memperbarui tiket');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // ... sisa kode build Anda tidak perlu diubah ...
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: kPrimaryBackground,
       appBar: AppBar(
-        title: const Text('Edit Jumlah Tiket'),
-        backgroundColor: Colors.orangeAccent,
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          'Edit Jumlah Tiket',
+          style: TextStyle(color: kPrimaryTextColor),
+        ),
+        backgroundColor: kSecondaryBackground,
+        iconTheme: const IconThemeData(color: kPrimaryTextColor),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -73,15 +73,18 @@ class _EditTiketPageState extends State<EditTiketPage> {
             Text(
               'Film: ${widget.tiket.film?.title ?? widget.tiket.nama}',
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
+                color: kPrimaryTextColor,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             Card(
-              color: Colors.grey.shade900,
+              color: kSecondaryBackground,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -89,14 +92,14 @@ class _EditTiketPageState extends State<EditTiketPage> {
                   children: [
                     const Text(
                       'Ubah Jumlah Tiket',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
+                      style: TextStyle(color: kPrimaryTextColor, fontSize: 18),
                     ),
                     Row(
                       children: [
                         IconButton(
                           icon: const Icon(
                             Icons.remove_circle,
-                            color: Colors.white,
+                            color: kAccentColor,
                           ),
                           onPressed: _jumlahTiket > 1
                               ? () => setState(() => _jumlahTiket--)
@@ -105,7 +108,7 @@ class _EditTiketPageState extends State<EditTiketPage> {
                         Text(
                           '$_jumlahTiket',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: kPrimaryTextColor,
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
@@ -113,7 +116,7 @@ class _EditTiketPageState extends State<EditTiketPage> {
                         IconButton(
                           icon: const Icon(
                             Icons.add_circle,
-                            color: Colors.white,
+                            color: kAccentColor,
                           ),
                           onPressed: () => setState(() => _jumlahTiket++),
                         ),
@@ -127,17 +130,21 @@ class _EditTiketPageState extends State<EditTiketPage> {
             ElevatedButton(
               onPressed: _loading ? null : _updateTiket,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
+                backgroundColor: kAccentColor,
+                foregroundColor: kPrimaryBackground,
                 minimumSize: const Size.fromHeight(50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: _loading
-                  ? const CircularProgressIndicator(color: Colors.white)
+                  ? const CircularProgressIndicator(color: kPrimaryBackground)
                   : const Text(
                       'Simpan Perubahan',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
           ],

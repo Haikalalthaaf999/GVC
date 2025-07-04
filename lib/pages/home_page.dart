@@ -1,15 +1,16 @@
-// lib/pages/home_page.dart (Versi FINAL dengan CurvedNavigationBar)
+// lib/pages/home_page.dart
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vgc/auth/login.dart';
 import 'package:vgc/pages/detail_pages.dart';
-import 'package:vgc/pages/tambah_film.dart';
+import 'package:vgc/pages/admin/tambah_film.dart';
 import 'package:vgc/pages/tiket.dart';
-import 'package:vgc/pages/user.dart'; 
+import 'package:vgc/pages/user.dart';
 import 'package:vgc/custom/bottom.dart';
-
+import 'package:vgc/helper/prefrence.dart';
+import 'package:vgc/theme/color.dart';
 
 import '/api/film_service.dart';
 import '/models/model_film.dart';
@@ -28,6 +29,10 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
 
+  String _userName = 'Pengguna';
+  String _userEmail = 'user@example.com';
+  bool _isAdmin = false;
+
   final List<Map<String, dynamic>> movieImages = [
     {
       'title': 'Inside Out 2',
@@ -44,21 +49,12 @@ class _HomePageState extends State<HomePage> {
       'imageUrl':
           'https://i.pinimg.com/736x/68/6e/f1/686ef19247330b0530f17b65f1e7541f.jpg',
     },
-    {
-      'title': 'Sonic the Hedgehog 2',
-      'imageUrl':
-          'https://i.pinimg.com/736x/c3/ea/27/c3ea276736f2424ad341f5bef3349bb4.jpg',
-    },
-    {
-      'title': '24H Limit',
-      'imageUrl':
-          'https://i.pinimg.com/736x/28/8b/b2/288bb226c16be6d37ad95576ab95bafc.jpg',
-    },
   ];
 
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     _loadFilms();
     _searchController.addListener(_filterFilms);
   }
@@ -73,6 +69,15 @@ class _HomePageState extends State<HomePage> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+    });
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('nama') ?? 'Pengguna';
+      _userEmail = prefs.getString('email') ?? 'email@example.com';
+      _isAdmin = prefs.getBool('isAdmin') ?? false;
     });
   }
 
@@ -100,10 +105,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('nama');
-    await prefs.remove('email');
+    await PreferenceHelper.clear();
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
@@ -127,8 +129,8 @@ class _HomePageState extends State<HomePage> {
               },
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  color: Colors.grey.shade800,
-                  child: const Icon(Icons.broken_image, color: Colors.white24),
+                  color: kSecondaryBackground, // PERUBAHAN WARNA
+                  child: const Icon(Icons.broken_image, color: kAccentColor),
                 );
               },
             ),
@@ -147,19 +149,24 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildFilmGrid() {
-    if (_filteredFilms.isEmpty && !_isLoading && _searchController.text.isNotEmpty) {
+    if (_filteredFilms.isEmpty &&
+        !_isLoading &&
+        _searchController.text.isNotEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20.0),
           child: Text(
             'Tidak ada film yang cocok dengan pencarian Anda.',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
+            style: TextStyle(
+              color: kAccentColor,
+              fontSize: 16,
+            ), // PERUBAHAN WARNA
             textAlign: TextAlign.center,
           ),
         ),
       );
     }
-    
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -190,16 +197,18 @@ class _HomePageState extends State<HomePage> {
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
                             return const Center(
-                              child: CircularProgressIndicator(),
+                              child: CircularProgressIndicator(
+                                color: kAccentColor,
+                              ),
                             );
                           },
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
-                              color: Colors.grey.shade800,
+                              color: kSecondaryBackground, // PERUBAHAN WARNA
                               child: const Center(
                                 child: Icon(
                                   Icons.broken_image,
-                                  color: Colors.white38,
+                                  color: kAccentColor, // PERUBAHAN WARNA
                                   size: 40,
                                 ),
                               ),
@@ -207,11 +216,11 @@ class _HomePageState extends State<HomePage> {
                           },
                         )
                       : Container(
-                          color: Colors.grey.shade800,
+                          color: kSecondaryBackground, // PERUBAHAN WARNA
                           child: const Center(
                             child: Icon(
                               Icons.movie_creation_outlined,
-                              color: Colors.white38,
+                              color: kAccentColor, // PERUBAHAN WARNA
                               size: 40,
                             ),
                           ),
@@ -222,7 +231,7 @@ class _HomePageState extends State<HomePage> {
               Text(
                 film.title,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: kPrimaryTextColor, // PERUBAHAN WARNA
                   fontWeight: FontWeight.bold,
                 ),
                 maxLines: 2,
@@ -238,7 +247,9 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildFilmPageBodyWithSearch() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.redAccent));
+      return const Center(
+        child: CircularProgressIndicator(color: kAccentColor),
+      );
     }
 
     if (films.isEmpty && _searchController.text.isEmpty) {
@@ -248,7 +259,10 @@ class _HomePageState extends State<HomePage> {
           children: [
             const Text(
               'Gagal memuat film atau tidak ada film tersedia.',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+              style: TextStyle(
+                color: kAccentColor,
+                fontSize: 16,
+              ), // PERUBAHAN WARNA
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
@@ -256,6 +270,10 @@ class _HomePageState extends State<HomePage> {
               onPressed: _loadFilms,
               icon: const Icon(Icons.refresh),
               label: const Text('Coba Lagi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kSecondaryBackground, // PERUBAHAN WARNA
+                foregroundColor: kPrimaryTextColor,
+              ),
             ),
           ],
         ),
@@ -264,7 +282,7 @@ class _HomePageState extends State<HomePage> {
 
     return RefreshIndicator(
       onRefresh: _loadFilms,
-      color: Colors.redAccent,
+      color: kAccentColor, // PERUBAHAN WARNA
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -272,23 +290,32 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: kSecondaryBackground, // PERUBAHAN WARNA
                   borderRadius: BorderRadius.circular(25),
-                  border: Border.all(color: Colors.white.withOpacity(0.2)),
                 ),
                 child: TextField(
                   controller: _searchController,
-                  cursorColor: Colors.redAccent,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
+                  cursorColor: kAccentColor, // PERUBAHAN WARNA
+                  style: const TextStyle(
+                    color: kPrimaryTextColor,
+                  ), // PERUBAHAN WARNA
+                  decoration: const InputDecoration(
                     hintText: 'Cari film...',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                    prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.7)),
+                    hintStyle: TextStyle(
+                      color: kAccentColor,
+                    ), // PERUBAHAN WARNA
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: kAccentColor, // PERUBAHAN WARNA
+                    ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    contentPadding: EdgeInsets.symmetric(vertical: 14),
                     isDense: true,
                   ),
                 ),
@@ -301,7 +328,7 @@ class _HomePageState extends State<HomePage> {
                 'Segera Tayang',
                 style: TextStyle(
                   fontSize: 20,
-                  color: Colors.white,
+                  color: kPrimaryTextColor, // PERUBAHAN WARNA
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -315,7 +342,7 @@ class _HomePageState extends State<HomePage> {
                 'Sedang Tayang',
                 style: TextStyle(
                   fontSize: 20,
-                  color: Colors.white,
+                  color: kPrimaryTextColor, // PERUBAHAN WARNA
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -333,63 +360,70 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Menyesuaikan urutan pages agar sesuai dengan ikon di CurvedNavigationBar
-    // Icons.home (index 0) -> Film
-    // Icons.confirmation_number (index 1) -> Tiket
-    // Icons.history (index 2) -> Halaman Riwayat
-    // Icons.person (index 3) -> Akun
     final List<Widget> pages = [
-      _buildFilmPageBodyWithSearch(), // Halaman Film (Home)
-      const TiketListPage(),          // Halaman Tiket
-      const Center(child: Text('Halaman Riwayat (History)', style: TextStyle(color: Colors.white, fontSize: 20))), // Halaman Riwayat (placeholder)
-      const UserPage(),               // Halaman Akun
+      _buildFilmPageBodyWithSearch(),
+      const TiketListPage(),
+      const Center(
+        child: Text(
+          'Coming Soon',
+          style: TextStyle(
+            color: kPrimaryTextColor,
+            fontSize: 20,
+          ), // PERUBAHAN WARNA
+        ),
+      ),
+      const UserPage(),
     ];
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        actions: [Container()],
-        backgroundColor: Colors.orange,
-        title: Text(
-          _selectedIndex == 0
-              ? "VGC Cinema"
-              : _selectedIndex == 1
-                  ? "Tiket Saya"
-                  : _selectedIndex == 2
-                      ? "Riwayat" // Judul untuk halaman Riwayat
-                      : "Profil Pengguna", // Judul untuk halaman Akun
-          style: const TextStyle(color: Colors.white),
-        ),
-       
-      ),
+      backgroundColor: kPrimaryBackground, // PERUBAHAN WARNA
       body: pages[_selectedIndex],
-      floatingActionButton: _selectedIndex == 0 // FAB hanya muncul di halaman Film (index 0)
+      floatingActionButton: _selectedIndex == 0 && _isAdmin
           ? FloatingActionButton(
-              backgroundColor: Colors.orange,
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const TambahFilmPage()),
-              ).then((isSuccess) {
-                if (isSuccess == true) {
-                  _loadFilms();
-                }
-              }),
+              backgroundColor: kAccentColor, // PERUBAHAN WARNA
+              onPressed: () =>
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TambahFilmPage()),
+                  ).then((isSuccess) {
+                    if (isSuccess == true) {
+                      _loadFilms();
+                    }
+                  }),
               tooltip: 'Tambah Film',
-              child: const Icon(Icons.add, color: Colors.white),
+              child: const Icon(
+                Icons.add,
+                color: kPrimaryBackground,
+              ), // PERUBAHAN WARNA
             )
           : null,
-      // --- Mengganti BottomNavigationBar dengan CurvedNavigationBar ---
       bottomNavigationBar: CurvedNavigationBar(
         items: const [
-          Icon(Icons.home, size: 24.0, color: Colors.black), // Film (index 0)
-          Icon(Icons.confirmation_number, size: 24.0, color: Colors.black), // Tiket (index 1)
-          Icon(Icons.history, size: 24.0, color: Colors.black), // Riwayat (index 2)
-          Icon(Icons.person, size: 24.0, color: Colors.black), // Akun (index 3)
+          Icon(
+            Icons.home,
+            size: 24.0,
+            color: kPrimaryBackground,
+          ), // PERUBAHAN WARNA
+          Icon(
+            Icons.confirmation_number,
+            size: 24.0,
+            color: kPrimaryBackground,
+          ), // PERUBAHAN WARNA
+          Icon(
+            Icons.history,
+            size: 24.0,
+            color: kPrimaryBackground,
+          ), // PERUBAHAN WARNA
+          Icon(
+            Icons.person,
+            size: 24.0,
+            color: kPrimaryBackground,
+          ), // PERUBAHAN WARNA
         ],
         index: _selectedIndex,
-        color:  Colors.orangeAccent, // Warna latar belakang bar
-        buttonBackgroundColor: Colors.white, // Warna latar belakang tombol aktif
-        backgroundColor: const Color(0xff0000), // Warna latar belakang Scaffold di bawah CurvedNav
+        color: kSecondaryBackground, // PERUBAHAN WARNA
+        buttonBackgroundColor: kAccentColor, // PERUBAHAN WARNA
+        backgroundColor: kPrimaryBackground, // PERUBAHAN WARNA
         height: 75.0,
         onTap: (index) {
           setState(() {
@@ -400,3 +434,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+  
